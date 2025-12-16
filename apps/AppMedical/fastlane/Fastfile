@@ -1,0 +1,53 @@
+# Fastfile for AppMedical iOS CI/CD
+
+default_platform(:ios)
+
+platform :ios do
+  desc "Build the app"
+  lane :build do
+    clean_build_artifacts
+    increment_build_number(build_number: number_of_commits)
+    
+    build_app(
+      workspace: "AppMedical.xcworkspace",
+      scheme: "AppMedical",
+      export_method: "app-store",
+      output_directory: "./build",
+      output_name: "AppMedical.ipa",
+      clean: true
+    )
+  end
+
+  desc "Run tests"
+  lane :test do
+    run_tests(
+      workspace: "AppMedical.xcworkspace",
+      scheme: "AppMedical",
+      device: "iPhone 15",
+      code_coverage: true
+    )
+  end
+
+  desc "Release to TestFlight"
+  lane :beta do
+    match(type: "appstore", readonly: true)
+    
+    build_app(
+      workspace: "AppMedical.xcworkspace",
+      scheme: "AppMedical",
+      export_method: "app-store"
+    )
+    
+    upload_to_testflight(
+      skip_waiting_for_build_processing: false
+    )
+  end
+
+  desc "Run SwiftLint"
+  lane :lint do
+    swiftlint(
+      mode: :lint,
+      strict: true
+    )
+  end
+end
